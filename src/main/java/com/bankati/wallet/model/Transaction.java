@@ -15,18 +15,20 @@ public class Transaction {
     @JoinColumn(name = "wallet_id")
     @JsonIgnore
     private Wallet wallet;
-
+    @Enumerated(EnumType.STRING)
+    private CurrencyType currencyType = CurrencyType.FIAT;
     private String type; // DEBIT, CREDIT
     private Double amount;
     private LocalDateTime timestamp;
     private String currency;
 
-    public Transaction(Long id, LocalDateTime timestamp, Double amount, String type, Wallet wallet) {
+    public Transaction(Long id, LocalDateTime timestamp, Double amount, String type, Wallet wallet, CurrencyType currencyType) {
         this.id = id;
         this.timestamp = timestamp;
         this.amount = amount;
         this.type = type;
         this.wallet = wallet;
+        this.currencyType = currencyType;
     }
 
     public Transaction() {}
@@ -77,5 +79,13 @@ public class Transaction {
 
     public void setCurrency(String currency) {
         this.currency = currency;
+    }
+
+    public CurrencyType getCurrencyType() {
+        return currencyType;
+    }
+
+    public void setCurrencyType(CurrencyType currencyType) {
+        this.currencyType = currencyType;
     }
 }

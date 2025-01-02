@@ -13,9 +13,9 @@ public class WalletCurrency {
     @JoinColumn(name = "wallet_id")
     @JsonIgnore
     private Wallet wallet;
-
     private String currencyCode; // EUR, USD, BTC, ETH, etc.
     private Double balance;
+
 
     public WalletCurrency(Long id, Wallet wallet, String currencyCode, Double balance) {
         this.id = id;

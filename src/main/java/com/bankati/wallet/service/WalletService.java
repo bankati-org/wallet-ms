@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class WalletService {
@@ -23,6 +25,9 @@ public class WalletService {
 
     @Autowired
     private CurrencyExchangeService currencyExchangeService;
+
+    @Autowired
+    private CryptoExchangeService cryptoExchangeService;
 
     public Wallet getWalletByUserId(Long userId) {
         return walletRepository.findByUserId(userId)
@@ -59,6 +64,7 @@ public class WalletService {
         transaction.setType("CREDIT");
         transaction.setAmount(amount);
         transaction.setCurrency(currency);
+        transaction.setCurrencyType(isCryptoCurrency(currency) ? CurrencyType.CRYPTO : CurrencyType.FIAT);
         transaction.setTimestamp(LocalDateTime.now());
 
         transactionRepository.save(transaction);
@@ -83,6 +89,7 @@ public class WalletService {
         transaction.setType("DEBIT");
         transaction.setAmount(amount);
         transaction.setCurrency(currency);
+        transaction.setCurrencyType(isCryptoCurrency(currency) ? CurrencyType.CRYPTO : CurrencyType.FIAT);
         transaction.setTimestamp(LocalDateTime.now());
 
         transactionRepository.save(transaction);
@@ -186,6 +193,92 @@ public class WalletService {
         transaction.setCurrency(currency);
         transaction.setTimestamp(LocalDateTime.now());
         transactionRepository.save(transaction);
+    }
+
+    public void buyCrypto(Long userId, String cryptoSymbol, Double fiatAmount, String fiatCurrency) {
+        Double cryptoPrice = cryptoExchangeService.getCryptoPrice(cryptoSymbol, fiatCurrency);
+        Double cryptoAmount = fiatAmount / cryptoPrice;
+
+        creditWallet(userId, cryptoSymbol, cryptoAmount);
+
+        Transaction transaction = new Transaction();
+        transaction.setWallet(getWalletByUserId(userId));
+        transaction.setType("BUY_CRYPTO");
+        transaction.setAmount(cryptoAmount);
+        transaction.setCurrency(cryptoSymbol);
+        transaction.setCurrencyType(CurrencyType.CRYPTO);
+        transaction.setTimestamp(LocalDateTime.now());
+        transactionRepository.save(transaction);
+    }
+
+    public void sellCrypto(Long userId, String cryptoSymbol, Double cryptoAmount, String fiatCurrency) {
+        Double cryptoPrice = cryptoExchangeService.getCryptoPrice(cryptoSymbol, fiatCurrency);
+        Double fiatAmount = cryptoAmount * cryptoPrice;
+
+        debitWallet(userId, cryptoSymbol, cryptoAmount);
+        creditWallet(userId, fiatCurrency, fiatAmount);
+
+        Transaction transaction = new Transaction();
+        transaction.setWallet(getWalletByUserId(userId));
+        transaction.setType("SELL_CRYPTO");
+        transaction.setAmount(fiatAmount);
+        transaction.setCurrency(fiatCurrency);
+        transaction.setCurrencyType(CurrencyType.CRYPTO);
+        transaction.setTimestamp(LocalDateTime.now());
+        transactionRepository.save(transaction);
+    }
+
+    public void transferCrypto(Long fromUserId, Long toUserId, String cryptoSymbol, Double cryptoAmount) {
+        debitWallet(fromUserId, cryptoSymbol, cryptoAmount);
+        creditWallet(toUserId, cryptoSymbol, cryptoAmount);
+
+        Transaction transaction = new Transaction();
+        transaction.setWallet(getWalletByUserId(fromUserId));
+        transaction.setType("TRANSFER_CRYPTO");
+        transaction.setAmount(cryptoAmount);
+        transaction.setCurrency(cryptoSymbol);
+        transaction.setCurrencyType(CurrencyType.CRYPTO);
+        transaction.setTimestamp(LocalDateTime.now());
+        transactionRepository.save(transaction);
+    }
+
+
+    public List<Transaction> getCryptoTransactionsByUserId(Long userId) {
+        Wallet wallet = getWalletByUserId(userId);
+        return wallet.getTransactions().stream()
+                .filter(transaction -> transaction.getCurrencyType() == CurrencyType.CRYPTO)
+                .collect(Collectors.toList());
+    }
+
+
+    public void transferCryptoToFiat(Long userId, String cryptoSymbol, Double cryptoAmount, String fiatCurrency) {
+        // Obtenir le prix actuel de la cryptomonnaie
+        Double cryptoPriceInFiat = cryptoExchangeService.getCryptoPrice(cryptoSymbol, fiatCurrency);
+
+        // Calculer le montant en devise fiat
+        Double fiatAmount = cryptoAmount * cryptoPriceInFiat;
+
+        // Débiter le portefeuille en cryptomonnaie
+        debitWallet(userId, cryptoSymbol, cryptoAmount);
+
+        // Crédite le portefeuille en devise fiat
+        creditWallet(userId, fiatCurrency, fiatAmount);
+
+        // Enregistrer la transaction
+        Transaction transaction = new Transaction();
+        transaction.setWallet(getWalletByUserId(userId));
+        transaction.setType("TRANSFER_CRYPTO_TO_FIAT");
+        transaction.setAmount(fiatAmount);
+        transaction.setCurrency(fiatCurrency);
+        transaction.setCurrencyType(CurrencyType.CRYPTO);
+        transaction.setTimestamp(LocalDateTime.now());
+        transactionRepository.save(transaction);
+    }
+
+    private boolean isCryptoCurrency(String currency) {
+        // Liste des cryptomonnaies connues, vous pouvez l'étendre
+        List<String> cryptoCurrencies = List.of("BTC", "ETH", "USDT", "BNB", "XRP", "ADA", "DOGE");
+        return cryptoCurrencies.contains(currency.toUpperCase());
     }
 
 
