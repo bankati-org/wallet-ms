@@ -11,9 +11,5 @@ import java.util.Map;
 public interface CoinMarketCapClient {
 
     @GetMapping("/cryptocurrency/quotes/latest")
-    Map<String, Object> getCryptoPrice(
-            @RequestParam("symbol") String cryptoSymbol,
-            @RequestParam("convert") String fiatCurrency,
-            @RequestHeader("X-CMC_PRO_API_KEY") String apiKey
-    );
+    Map<String, Object> getCryptoPrice(@RequestParam("symbol") String cryptoSymbol, @RequestParam("convert") String fiatCurrency, @RequestHeader("X-CMC_PRO_API_KEY") String apiKey);
 }

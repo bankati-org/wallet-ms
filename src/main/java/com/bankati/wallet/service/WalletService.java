@@ -1,10 +1,15 @@
 package com.bankati.wallet.service;
 
+import com.bankati.wallet.exception.CurrencyNotFoundException;
+import com.bankati.wallet.exception.InsufficientFundsException;
 import com.bankati.wallet.exception.WalletAlreadyExistsException;
-import com.bankati.wallet.model.*;
+import com.bankati.wallet.exception.WalletNotFoundException;
+import com.bankati.wallet.model.CurrencyType;
+import com.bankati.wallet.model.Transaction;
+import com.bankati.wallet.model.Wallet;
+import com.bankati.wallet.model.WalletCurrency;
 import com.bankati.wallet.repository.TransactionRepository;
 import com.bankati.wallet.repository.WalletRepository;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,9 +36,8 @@ public class WalletService {
 
     public Wallet getWalletByUserId(Long userId) {
         return walletRepository.findByUserId(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Wallet not found for user: " + userId));
+                .orElseThrow(() -> new WalletNotFoundException("Wallet not found for user: " + userId));
     }
-
 
     @Transactional
     public Wallet createWallet(Long userId, String defaultCurrency) throws WalletAlreadyExistsException {
@@ -76,10 +80,11 @@ public class WalletService {
         WalletCurrency walletCurrency = wallet.getCurrencies().stream()
                 .filter(c -> c.getCurrencyCode().equals(currency))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Currency " + currency + " not found in wallet"));
+                .orElseThrow(() -> new CurrencyNotFoundException("Currency " + currency + " not found in wallet"));
+
 
         if (walletCurrency.getBalance() < amount) {
-            throw new RuntimeException("Insufficient funds in " + currency);
+            throw new InsufficientFundsException("Insufficient funds in " + currency);
         }
 
         walletCurrency.setBalance(walletCurrency.getBalance() - amount);
@@ -106,7 +111,7 @@ public class WalletService {
         Double exchangeRate = currencyExchangeService.getExchangeRate(fromCurrency, toCurrency);
         Double convertedAmount = amount * exchangeRate;
 
-        debitWalletWithAutoConversion(fromUserId, fromCurrency, amount);
+        debitWallet(fromUserId, fromCurrency, amount);
         creditWallet(toUserId, toCurrency, convertedAmount);
 
     }
@@ -178,7 +183,7 @@ public class WalletService {
             }
 
             if (remainingAmount > 0) {
-                throw new RuntimeException("Insufficient funds across all currencies to complete the transaction");
+                throw new InsufficientFundsException("Insufficient funds across all currencies to complete the transaction");
             }
         }
 
