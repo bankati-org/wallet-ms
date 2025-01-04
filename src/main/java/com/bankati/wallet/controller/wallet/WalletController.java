@@ -1,12 +1,18 @@
 package com.bankati.wallet.controller.wallet;
 
 import com.bankati.wallet.controller.wallet.models.*;
+import com.bankati.wallet.model.Transaction;
 import com.bankati.wallet.model.Wallet;
+import com.bankati.wallet.service.CurrencyExchangeService;
 import com.bankati.wallet.service.WalletService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -15,6 +21,8 @@ public class WalletController {
 
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private CurrencyExchangeService currencyExchangeService;
 
     @GetMapping("/{userId}")
     public ResponseEntity<Wallet> getWallet(@PathVariable Long userId) {
@@ -27,6 +35,12 @@ public class WalletController {
         // Si l'exception WalletAlreadyExistsException est lancée, elle sera capturée par le GlobalExceptionHandler
         Wallet wallet = walletService.createWallet(request.getUserId(), request.getDefaultCurrency());
         return ResponseEntity.ok(wallet);
+    }
+
+    @GetMapping("/transactions/{userId}")
+    public ResponseEntity<List<Transaction>> getTransactions(@PathVariable Long userId) {
+        List<Transaction> transactions = walletService.getFiatTransactionsByUserId(userId);
+        return ResponseEntity.ok(transactions);
     }
 
 
@@ -68,4 +82,19 @@ public class WalletController {
         return ResponseEntity.ok("Currencies added successfully");
 
     }
+
+    @GetMapping("/exchangeRates/{currency}")
+    public ResponseEntity<?> getExchangeRates(@NotNull @PathVariable String currency) throws Exception {
+        return ResponseEntity.ok(currencyExchangeService.getExchangeRates(currency));
+
+    }
+
+//
+//    // Endpoint pour récupérer l'historique des taux de change
+//    @GetMapping("/currency-history")
+//    public Map<String, Object> getCurrencyHistory(@RequestParam("currency") String baseCurrency,
+//                                                  @RequestParam("start_date") String startDate,
+//                                                  @RequestParam("end_date") String endDate) {
+//        return currencyExchangeService.getExchangeRateHistory(baseCurrency, startDate, endDate);
+//    }
 }

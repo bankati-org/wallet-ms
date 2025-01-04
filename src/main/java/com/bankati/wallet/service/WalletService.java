@@ -255,6 +255,13 @@ public class WalletService {
                 .collect(Collectors.toList());
     }
 
+    public List<Transaction> getFiatTransactionsByUserId(Long userId) {
+        Wallet wallet = getWalletByUserId(userId);
+        return wallet.getTransactions().stream()
+                .filter(transaction -> transaction.getCurrencyType() == CurrencyType.FIAT)
+                .collect(Collectors.toList());
+    }
+
 
     public void transferCryptoToFiat(Long userId, String cryptoSymbol, Double cryptoAmount, String fiatCurrency) {
         // Obtenir le prix actuel de la cryptomonnaie
