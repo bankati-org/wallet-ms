@@ -80,7 +80,7 @@ public class WalletController {
 
     @PostMapping("/transfer")
     public ResponseEntity<Void> transfer(@Valid @RequestBody TransferRequest request) {
-        walletService.transfer(request.getFromUserId(), request.getToUserId(), request.getCurrency(), request.getAmount(), request.getCurrencyType());
+        walletService.transfer(request.getFromUserId(), request.getToUserId(), request.getCurrency(), request.getAmount());
         return ResponseEntity.ok().build();
     }
 

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -117,9 +118,9 @@ public class WalletService {
         walletRepository.save(wallet);
     }
 
-    public void transfer(Long fromUserId, Long toUserId, String currency, Double amount, CurrencyType currencyType) {
+    public void transfer(Long fromUserId, Long toUserId, String currency, Double amount) {
         creditWallet(fromUserId, currency, amount);
-        debitWallet(toUserId, currency, amount, currencyType);
+        debitWallet(toUserId, currency, amount, CurrencyType.FIAT);
     }
 
     @Transactional
@@ -221,6 +222,7 @@ public class WalletService {
         Double cryptoPrice = cryptoExchangeService.getCryptoPrice(cryptoSymbol, fiatCurrency);
         Double cryptoAmount = fiatAmount / cryptoPrice;
 
+        creditWallet(userId, fiatCurrency, fiatAmount);
         debitWallet(userId, cryptoSymbol, cryptoAmount, CurrencyType.CRYPTO);
 
         Transaction transaction = new Transaction();
@@ -269,6 +271,7 @@ public class WalletService {
         Wallet wallet = getWalletByUserId(userId);
         return wallet.getTransactions().stream()
                 .filter(transaction -> transaction.getCurrencyType() == CurrencyType.CRYPTO)
+                .sorted(Comparator.comparing(Transaction::getTimestamp).reversed())
                 .collect(Collectors.toList());
     }
 
@@ -276,6 +279,7 @@ public class WalletService {
         Wallet wallet = getWalletByUserId(userId);
         return wallet.getTransactions().stream()
                 .filter(transaction -> transaction.getCurrencyType() == CurrencyType.FIAT)
+                .sorted(Comparator.comparing(Transaction::getTimestamp).reversed())
                 .collect(Collectors.toList());
     }
 
