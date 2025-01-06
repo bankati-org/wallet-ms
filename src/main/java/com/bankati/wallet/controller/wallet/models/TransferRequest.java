@@ -1,5 +1,6 @@
 package com.bankati.wallet.controller.wallet.models;
 
+import com.bankati.wallet.model.CurrencyType;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
@@ -17,11 +18,17 @@ public class TransferRequest {
     @Positive(message = "Amount must be positive")
     private Double amount;
 
-    public TransferRequest(Long fromUserId, Long toUserId, String currency, Double amount) {
+
+
+    @NotNull
+    private CurrencyType currencyType;
+
+    public TransferRequest(Long fromUserId, Long toUserId, String currency, Double amount, CurrencyType currencyType) {
         this.fromUserId = fromUserId;
         this.toUserId = toUserId;
         this.currency = currency;
         this.amount = amount;
+        this.currencyType = currencyType;
     }
 
     public TransferRequest() {
@@ -57,5 +64,13 @@ public class TransferRequest {
 
     public void setAmount(@Positive(message = "Amount must be positive") Double amount) {
         this.amount = amount;
+    }
+
+    public @NotNull CurrencyType getCurrencyType() {
+        return currencyType;
+    }
+
+    public void setCurrencyType(@NotNull CurrencyType currencyType) {
+        this.currencyType = currencyType;
     }
 }
