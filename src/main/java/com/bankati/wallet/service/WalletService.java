@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -58,14 +59,30 @@ public class WalletService {
         return walletRepository.save(wallet);
     }
 
-    public void creditWallet(Long userId, String currency, Double amount) {
+    public List<WalletCurrency> getCryptoWalletsByUserId(Long userId) {
         Wallet wallet = getWalletByUserId(userId);
-        WalletCurrency walletCurrency = getOrCreateWalletCurrency(wallet, currency);
+        return wallet.getCurrencies().stream()
+                .filter(currency -> currency.getCurrencyType() == CurrencyType.CRYPTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<WalletCurrency> getFiatWalletsByUserId(Long userId) {
+        Wallet wallet = getWalletByUserId(userId);
+        return wallet.getCurrencies().stream()
+                .filter(currency -> currency.getCurrencyType() == CurrencyType.FIAT)
+                .collect(Collectors.toList());
+    }
+
+
+
+    public void debitWallet(Long userId, String currency, Double amount, CurrencyType currencyType) {
+        Wallet wallet = getWalletByUserId(userId);
+        WalletCurrency walletCurrency = getOrCreateWalletCurrency(wallet, currency, currencyType);
         walletCurrency.setBalance(walletCurrency.getBalance() + amount);
 
         Transaction transaction = new Transaction();
         transaction.setWallet(wallet);
-        transaction.setType("CREDIT");
+        transaction.setType("DEBIT");
         transaction.setAmount(amount);
         transaction.setCurrency(currency);
         transaction.setCurrencyType(isCryptoCurrency(currency) ? CurrencyType.CRYPTO : CurrencyType.FIAT);
@@ -75,7 +92,7 @@ public class WalletService {
         walletRepository.save(wallet);
     }
 
-    public void debitWallet(Long userId, String currency, Double amount) {
+    public void creditWallet(Long userId, String currency, Double amount) {
         Wallet wallet = getWalletByUserId(userId);
         WalletCurrency walletCurrency = wallet.getCurrencies().stream()
                 .filter(c -> c.getCurrencyCode().equals(currency))
@@ -91,7 +108,7 @@ public class WalletService {
 
         Transaction transaction = new Transaction();
         transaction.setWallet(wallet);
-        transaction.setType("DEBIT");
+        transaction.setType("CREDIT");
         transaction.setAmount(amount);
         transaction.setCurrency(currency);
         transaction.setCurrencyType(isCryptoCurrency(currency) ? CurrencyType.CRYPTO : CurrencyType.FIAT);
@@ -102,17 +119,17 @@ public class WalletService {
     }
 
     public void transfer(Long fromUserId, Long toUserId, String currency, Double amount) {
-        debitWallet(fromUserId, currency, amount);
-        creditWallet(toUserId, currency, amount);
+        creditWallet(fromUserId, currency, amount);
+        debitWallet(toUserId, currency, amount, CurrencyType.FIAT);
     }
 
     @Transactional
-    public void transferMultiCurrency(Long fromUserId, String fromCurrency, Long toUserId, String toCurrency, Double amount) {
+    public void transferMultiCurrency(Long fromUserId, String fromCurrency, Long toUserId, String toCurrency, Double amount, CurrencyType currencyType) {
         Double exchangeRate = currencyExchangeService.getExchangeRate(fromCurrency, toCurrency);
         Double convertedAmount = amount * exchangeRate;
 
-        debitWallet(fromUserId, fromCurrency, amount);
-        creditWallet(toUserId, toCurrency, convertedAmount);
+        creditWallet(fromUserId, fromCurrency, amount);
+        debitWallet(toUserId, toCurrency, convertedAmount, currencyType);
 
     }
 
@@ -125,7 +142,7 @@ public class WalletService {
                 .orElse(0.0);
     }
 
-    private WalletCurrency getOrCreateWalletCurrency(Wallet wallet, String currency) {
+    private WalletCurrency getOrCreateWalletCurrency(Wallet wallet, String currency, CurrencyType currencyType) {
         return wallet.getCurrencies().stream()
                 .filter(c -> c.getCurrencyCode().equals(currency))
                 .findFirst()
@@ -134,23 +151,24 @@ public class WalletService {
                     newCurrency.setWallet(wallet);
                     newCurrency.setCurrencyCode(currency);
                     newCurrency.setBalance(0.0);
+                    newCurrency.setCurrencyType(currencyType);
                     wallet.getCurrencies().add(newCurrency);
                     return newCurrency;
                 });
     }
 
-    public void addCurrenciesToWallet(Long userId, HashSet<String> currencies) {
-        Wallet wallet = getWalletByUserId(userId);
+//    public void addCurrenciesToWallet(Long userId, HashSet<String> currencies, CurrencyType currencyType) {
+//        Wallet wallet = getWalletByUserId(userId);
+//
+//        for (String currency : currencies) {
+//            // Add currency if it doesn't already exist
+//            getOrCreateWalletCurrency(wallet, currency);
+//        }
+//
+//        walletRepository.save(wallet);
+//    }
 
-        for (String currency : currencies) {
-            // Add currency if it doesn't already exist
-            getOrCreateWalletCurrency(wallet, currency);
-        }
-
-        walletRepository.save(wallet);
-    }
-
-    public void debitWalletWithAutoConversion(Long userId, String currency, Double amount) {
+    public void creditWalletWithAutoConversion(Long userId, String currency, Double amount) {
         Wallet wallet = getWalletByUserId(userId);
 
         // Check if the balance in the requested currency is sufficient
@@ -193,7 +211,7 @@ public class WalletService {
         // Log the transaction
         Transaction transaction = new Transaction();
         transaction.setWallet(wallet);
-        transaction.setType("DEBIT");
+        transaction.setType("CREDIT");
         transaction.setAmount(amount);
         transaction.setCurrency(currency);
         transaction.setTimestamp(LocalDateTime.now());
@@ -204,7 +222,8 @@ public class WalletService {
         Double cryptoPrice = cryptoExchangeService.getCryptoPrice(cryptoSymbol, fiatCurrency);
         Double cryptoAmount = fiatAmount / cryptoPrice;
 
-        creditWallet(userId, cryptoSymbol, cryptoAmount);
+        creditWallet(userId, fiatCurrency, fiatAmount);
+        debitWallet(userId, cryptoSymbol, cryptoAmount, CurrencyType.CRYPTO);
 
         Transaction transaction = new Transaction();
         transaction.setWallet(getWalletByUserId(userId));
@@ -220,8 +239,8 @@ public class WalletService {
         Double cryptoPrice = cryptoExchangeService.getCryptoPrice(cryptoSymbol, fiatCurrency);
         Double fiatAmount = cryptoAmount * cryptoPrice;
 
-        debitWallet(userId, cryptoSymbol, cryptoAmount);
-        creditWallet(userId, fiatCurrency, fiatAmount);
+        creditWallet(userId, cryptoSymbol, cryptoAmount);
+        debitWallet(userId, fiatCurrency, fiatAmount, CurrencyType.CRYPTO);
 
         Transaction transaction = new Transaction();
         transaction.setWallet(getWalletByUserId(userId));
@@ -234,8 +253,8 @@ public class WalletService {
     }
 
     public void transferCrypto(Long fromUserId, Long toUserId, String cryptoSymbol, Double cryptoAmount) {
-        debitWallet(fromUserId, cryptoSymbol, cryptoAmount);
-        creditWallet(toUserId, cryptoSymbol, cryptoAmount);
+        creditWallet(fromUserId, cryptoSymbol, cryptoAmount);
+        debitWallet(toUserId, cryptoSymbol, cryptoAmount, CurrencyType.CRYPTO);
 
         Transaction transaction = new Transaction();
         transaction.setWallet(getWalletByUserId(fromUserId));
@@ -252,6 +271,7 @@ public class WalletService {
         Wallet wallet = getWalletByUserId(userId);
         return wallet.getTransactions().stream()
                 .filter(transaction -> transaction.getCurrencyType() == CurrencyType.CRYPTO)
+                .sorted(Comparator.comparing(Transaction::getTimestamp).reversed())
                 .collect(Collectors.toList());
     }
 
@@ -259,6 +279,7 @@ public class WalletService {
         Wallet wallet = getWalletByUserId(userId);
         return wallet.getTransactions().stream()
                 .filter(transaction -> transaction.getCurrencyType() == CurrencyType.FIAT)
+                .sorted(Comparator.comparing(Transaction::getTimestamp).reversed())
                 .collect(Collectors.toList());
     }
 
@@ -271,10 +292,10 @@ public class WalletService {
         Double fiatAmount = cryptoAmount * cryptoPriceInFiat;
 
         // Débiter le portefeuille en cryptomonnaie
-        debitWallet(userId, cryptoSymbol, cryptoAmount);
+        creditWallet(userId, cryptoSymbol, cryptoAmount);
 
         // Crédite le portefeuille en devise fiat
-        creditWallet(userId, fiatCurrency, fiatAmount);
+        debitWallet(userId, fiatCurrency, fiatAmount, CurrencyType.FIAT);
 
         // Enregistrer la transaction
         Transaction transaction = new Transaction();

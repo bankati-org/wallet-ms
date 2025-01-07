@@ -1,8 +1,10 @@
 package com.bankati.wallet.controller.wallet;
 
 import com.bankati.wallet.controller.wallet.models.*;
+import com.bankati.wallet.model.CurrencyType;
 import com.bankati.wallet.model.Transaction;
 import com.bankati.wallet.model.Wallet;
+import com.bankati.wallet.model.WalletCurrency;
 import com.bankati.wallet.service.CurrencyExchangeService;
 import com.bankati.wallet.service.WalletService;
 import jakarta.validation.Valid;
@@ -29,6 +31,18 @@ public class WalletController {
         Wallet wallet = walletService.getWalletByUserId(userId);
         return ResponseEntity.ok(wallet);
     }
+    @GetMapping("/crypto")
+    public ResponseEntity<List<WalletCurrency>> getCryptoWallets(@NotNull Long userId) {
+        List<WalletCurrency> cryptoWallets = walletService.getCryptoWalletsByUserId(userId);
+        return ResponseEntity.ok(cryptoWallets);
+    }
+
+    @GetMapping("/fiat")
+    public ResponseEntity<List<WalletCurrency>> getFiatWallets(@NotNull Long userId) {
+        List<WalletCurrency> fiatWallets = walletService.getFiatWalletsByUserId(userId);
+        return ResponseEntity.ok(fiatWallets);
+    }
+
 
     @PostMapping
     public ResponseEntity<?> createWallet(@Valid @RequestBody CreateWalletRequest request) {
@@ -52,15 +66,15 @@ public class WalletController {
         return ResponseEntity.ok(balance);
     }
 
-    @PostMapping("/{userId}/credit")
-    public ResponseEntity<Void> creditWallet(@PathVariable Long userId, @Valid @RequestBody CreditDebitRequest request) {
-        walletService.creditWallet(userId, request.getCurrency(), request.getAmount());
+    @PostMapping("/{userId}/debit")
+    public ResponseEntity<Void> debitWallet(@PathVariable Long userId, @Valid @RequestBody CreditDebitRequest request) {
+        walletService.debitWallet(userId, request.getCurrency(), request.getAmount(), request.getCurrencyType());
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{userId}/debit")
-    public ResponseEntity<Void> debitWallet(@PathVariable Long userId, @Valid @RequestBody CreditDebitRequest request) {
-        walletService.debitWallet(userId, request.getCurrency(), request.getAmount());
+    @PostMapping("/{userId}/credit")
+    public ResponseEntity<Void> creditWallet(@PathVariable Long userId, @Valid @RequestBody CreditDebitRequest request) {
+        walletService.creditWallet(userId, request.getCurrency(), request.getAmount());
         return ResponseEntity.ok().build();
     }
 
@@ -72,16 +86,16 @@ public class WalletController {
 
     @PostMapping("/transfer/multi-currency")
     public ResponseEntity<Void> transferMultiCurrency(@Valid @RequestBody TransferMultiCurrencyRequest request) {
-        walletService.transferMultiCurrency(request.getFromUserId(), request.getFromCurrency(), request.getToUserId(), request.getToCurrency(), request.getAmount());
+        walletService.transferMultiCurrency(request.getFromUserId(), request.getFromCurrency(), request.getToUserId(), request.getToCurrency(), request.getAmount(), CurrencyType.FIAT);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{userId}/add-currencies")
-    public ResponseEntity<?> addCurrenciesToWallet(@PathVariable Long userId, @Valid @RequestBody AddCurrenciesRequest request) {
-        walletService.addCurrenciesToWallet(userId, request.getCurrencies());
-        return ResponseEntity.ok("Currencies added successfully");
-
-    }
+//    @PostMapping("/{userId}/add-currencies")
+//    public ResponseEntity<?> addCurrenciesToWallet(@PathVariable Long userId, @Valid @RequestBody AddCurrenciesRequest request) {
+//        walletService.addCurrenciesToWallet(userId, request.getCurrencies());
+//        return ResponseEntity.ok("Currencies added successfully");
+//
+//    }
 
     @GetMapping("/exchangeRates/{currency}")
     public ResponseEntity<?> getExchangeRates(@NotNull @PathVariable String currency) throws Exception {

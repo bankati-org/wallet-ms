@@ -17,6 +17,10 @@ public class TransferRequest {
     @Positive(message = "Amount must be positive")
     private Double amount;
 
+
+
+
+
     public TransferRequest(Long fromUserId, Long toUserId, String currency, Double amount) {
         this.fromUserId = fromUserId;
         this.toUserId = toUserId;
@@ -58,4 +62,5 @@ public class TransferRequest {
     public void setAmount(@Positive(message = "Amount must be positive") Double amount) {
         this.amount = amount;
     }
+
 }

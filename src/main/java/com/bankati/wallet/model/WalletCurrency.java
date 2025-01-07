@@ -17,11 +17,17 @@ public class WalletCurrency {
     private Double balance;
 
 
-    public WalletCurrency(Long id, Wallet wallet, String currencyCode, Double balance) {
+
+    @Enumerated(EnumType.STRING)
+    private CurrencyType currencyType=CurrencyType.FIAT; // CRYPTO ou FIAT
+
+
+    public WalletCurrency(Long id, Wallet wallet, String currencyCode, Double balance, CurrencyType currencyType) {
         this.id = id;
         this.wallet = wallet;
         this.currencyCode = currencyCode;
         this.balance = balance;
+        this.currencyType = currencyType;
     }
 
     public WalletCurrency() {}
@@ -56,6 +62,14 @@ public class WalletCurrency {
 
     public void setBalance(Double balance) {
         this.balance = balance;
+    }
+
+    public CurrencyType getCurrencyType() {
+        return currencyType;
+    }
+
+    public void setCurrencyType(CurrencyType currencyType) {
+        this.currencyType = currencyType;
     }
 }
 
