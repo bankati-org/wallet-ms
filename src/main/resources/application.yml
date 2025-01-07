@@ -1,0 +1,34 @@
+# Configuration de la base de données
+spring:
+  application:
+    name: wallet-ms
+  datasource:
+    url: jdbc:postgresql://localhost:1234/bankati
+    username: bankati
+    password: bankati
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  data:
+    jdbc:
+      dialect: postgresql
+
+# Port du microservice
+server:
+  port: 8082
+
+api:
+  exchangerates:
+    access_key: c7e8306539b39b00f8548283
+  coinmarketcap:
+    api:
+      key: dc2942b6-c201-42b0-8e18-24b1cc656f8e
+
+eureka:
+  client:
+    region: default
+    registry-fetch-interval-seconds: 5
+    service-url:
+      defaultZone: http://localhost:8081/eureka/
