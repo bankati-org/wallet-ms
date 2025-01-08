@@ -13,7 +13,7 @@ public class CryptoExchangeService {
 
     private final CoinMarketCapClient coinMarketCapClient;
 
-    @Value("${coinmarketcap.api.key}")
+    @Value("${api.coinmarketcap.api.key}")
     private String apiKey;
 
     public CryptoExchangeService(CoinMarketCapClient coinMarketCapClient) {

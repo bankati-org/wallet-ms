@@ -8,10 +8,10 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @EnableFeignClients
-@SpringBootApplication(scanBasePackages = "com.bankati.wallet")
-@EntityScan(basePackages = "com.bankati.wallet.model")
-@EnableJpaRepositories(basePackages = "com.bankati.wallet.repository")
-@ConfigurationPropertiesScan("com.bankati.wallet")
+@SpringBootApplication //(scanBasePackages = "com.bankati.wallet")
+//@EntityScan(basePackages = "com.bankati.wallet.model")
+//@EnableJpaRepositories(basePackages = "com.bankati.wallet.repository")
+//@ConfigurationPropertiesScan("com.bankati.wallet")
 public class WalletApplication {
 
 	public static void main(String[] args) {
