@@ -1,4 +1,4 @@
-# Configuration de la base de données
+# Application Configuration
 spring:
   application:
     name: wallet-ms
@@ -15,20 +15,22 @@ spring:
     jdbc:
       dialect: postgresql
 
-# Port du microservice
+# Server Configuration
 server:
   port: 8082
 
+# External API Configuration
 api:
   exchangerates:
-    access_key: c7e8306539b39b00f8548283
+    access_key: ${EXCHANGERATES_ACCESS_KEY:c7e8306539b39b00f8548283}
   coinmarketcap:
     api:
-      key: dc2942b6-c201-42b0-8e18-24b1cc656f8e
+      key: ${COINMARKETCAP_API_KEY:dc2942b6-c201-42b0-8e18-24b1cc656f8e}
 
+# Eureka Configuration
 eureka:
   client:
     region: default
     registry-fetch-interval-seconds: 5
     service-url:
-      defaultZone: http://34.41.170.207:32003/eureka/
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://34.41.170.207:32003/eureka/}
