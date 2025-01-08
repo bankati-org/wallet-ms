@@ -1,6 +1,7 @@
 package com.bankati.wallet.proxy;
 
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -8,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.Map;
 
 @FeignClient(name = "currency-exchange", url = "https://v6.exchangerate-api.com/v6")
+@Service
+
 public interface CurrencyExchangeClient {
 
     @GetMapping("/${api.exchangerates.access_key}/latest/{base_code}")
